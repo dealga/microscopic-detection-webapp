@@ -1,0 +1,9 @@
+High Power Field (HPF) Report
+
+PLease consider this with precautions, as this is a generated report and should not be used for clinical decision-making without proper validation.
+
+Analysis ID: {{ analysis.id }}
+Mitoses per 10 HPF: {{ analysis.mitoses_per_10_hpf }}
+Tumor Grade: {{ analysis.tumor_grade }}
+
+Generated from Mitotic Figure Detection System.

@@ -1,0 +1,361 @@
+<!-- templates/mitotic_app/results.html -->
+{% extends 'mitotic_app/base.html' %} {% block title %}Analysis Results {% endblock %} {% block content %}
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">Analysis Results</h4>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h5>Summary</h5>
+            <ul class="list-group mb-3">
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
+                Mitotic Figures
+                <span class="badge bg-success rounded-pill"
+                  >{{ mitotic_count }}</span
+                >
+              </li>
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
+                Review Figures
+                <span class="badge bg-warning rounded-pill"
+                  >{{ non_mitotic_count }}</span
+                >
+              </li>
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
+                Total Figures
+                <span class="badge bg-primary rounded-pill"
+                  >{{ total_count }}</span
+                >
+              </li>
+              {% if analysis.total_hpfs %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                Mitoses per 10 HPF
+                <span class="badge bg-info rounded-pill">{{ analysis.mitoses_per_10_hpf }}</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                Tumor Grade
+                <span class="badge {% if analysis.tumor_grade == 1 %}bg-success{% elif analysis.tumor_grade == 2 %}bg-warning{% else %}bg-danger{% endif %} rounded-pill">
+                  {{ analysis.tumor_grade }}
+                </span>
+              </li>
+              {% endif %}
+            </ul>
+
+            <div class="mb-3">
+              <h5>Download Options</h5>
+              <div class="btn-group" role="group">
+                <a
+                  href="{% url 'download_all' analysis.id %}"
+                  class="btn btn-outline-primary"
+                  >Download All</a
+                >
+                <a
+                  href="{% url 'download_category' analysis.id 'mitotic' %}"
+                  class="btn btn-outline-success"
+                  >Download Mitotic</a
+                >
+                <a
+                  href="{% url 'download_category' analysis.id 'non_mitotic' %}"
+                  class="btn btn-outline-warning"
+                  >Download Review</a
+                >
+                <a
+                  href="{% url 'download_hpf_report' analysis.id %}"
+                  class="btn btn-outline-dark"
+                  >Download HPF Report</a
+                >
+
+              </div>
+            </div>
+
+            {% if analysis.total_hpfs %}
+            <div class="card mb-3">
+              <div class="card-header bg-info text-white">
+                <h5 class="mb-0">HPF Analysis Details</h5>
+              </div>
+              <div class="card-body">
+                <p><strong>Total High-Power Fields (HPF):</strong> {{ analysis.total_hpfs }}</p>
+                <p><strong>HPF Size (pixels):</strong> {{ analysis.hpf_width_px }} × {{ analysis.hpf_height_px }}</p>
+                <p><strong>Resolution (μm/pixel):</strong> {{ analysis.x_mpp|floatformat:2 }} × {{ analysis.y_mpp|floatformat:2 }}</p>
+                <p><strong>Mitoses per 10 HPF:</strong> {{ analysis.mitoses_per_10_hpf }}</p>
+                <div class="alert {% if analysis.tumor_grade == 1 %}alert-success{% elif analysis.tumor_grade == 2 %}alert-warning{% else %}alert-danger{% endif %}">
+                  <strong>Tumor Grade:</strong> {{ analysis.tumor_grade }}
+                  <p class="mb-0 mt-1">
+                    {% if analysis.tumor_grade == 1 %}
+                      Grade 1: 0-7 mitoses per 10 HPF (Low Grade)
+                    {% elif analysis.tumor_grade == 2 %}
+                      Grade 2: 8-14 mitoses per 10 HPF (Intermediate Grade)
+                    {% else %}
+                      Grade 3: 15+ mitoses per 10 HPF (High Grade)
+                    {% endif %}
+                  </p>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <h5>Processed Video</h5>
+            <div class="ratio ratio-16x9">
+              <video controls>
+                <source
+                  src="{{ analysis.processed_video.url }}"
+                  type="video/mp4"
+                />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+            <a href="{{ analysis.processed_video.url }}" class="btn btn-outline-info mt-3" download>Download Video</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Mitotic Figures -->
+  <div class="col-md-6 mb-4">
+    <div class="card">
+      <div class="card-header bg-success text-white">
+        <h5 class="mb-0">Mitotic Figures ({{ mitotic_figures.count }})</h5>
+      </div>
+      <div class="card-body">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-2 g-3">
+          {% for figure in mitotic_figures %}
+          <div class="col figure-card" data-id="{{ figure.id }}">
+            <div class="card h-100">
+              <img
+                src="{{ figure.image_file.url }}"
+                class="card-img-top figure-img"
+                alt="Mitotic figure"
+              />
+              <div class="card-body">
+                <p class="card-text">
+                  <small class="text-muted">
+                    Frame: {{ figure.frame_number }}<br />
+                    Confidence: {{ figure.confidence|floatformat:2 }}
+                  </small>
+                </p>
+                <div class="btn-group w-100" role="group">
+                  <button
+                    class="btn btn-sm btn-outline-warning move-btn"
+                    data-category="non_mitotic"
+                  >
+                    Move to Review
+                  </button>
+                  <button
+                    class="btn btn-sm btn-outline-danger discard-btn"
+                    data-category="discarded"
+                  >
+                    Discard
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <div class="col-12">
+            <p class="text-muted">No mitotic figures detected.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Non-Mitotic Figures -->
+  <div class="col-md-6 mb-4">
+    <div class="card">
+      <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0">
+          Review Figures ({{ non_mitotic_figures.count }})
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-2 g-3">
+          {% for figure in non_mitotic_figures %}
+          <div class="col figure-card" data-id="{{ figure.id }}">
+            <div class="card h-100">
+              <img
+                src="{{ figure.image_file.url }}"
+                class="card-img-top figure-img"
+                alt="Non-mitotic figure"
+              />
+              <div class="card-body">
+                <p class="card-text">
+                  <small class="text-muted">
+                    Frame: {{ figure.frame_number }}<br />
+                    Confidence: {{ figure.confidence|floatformat:2 }}
+                  </small>
+                </p>
+                <div class="btn-group w-100" role="group">
+                  <button
+                    class="btn btn-sm btn-outline-success move-btn"
+                    data-category="mitotic"
+                  >
+                    Move to Mitotic
+                  </button>
+                  <button
+                    class="btn btn-sm btn-outline-danger discard-btn"
+                    data-category="discarded"
+                  >
+                    Discard
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <div class="col-12">
+            <p class="text-muted">No Review figures detected.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Discarded Figures -->
+{% if discarded_figures.count > 0 %}
+<div class="row">
+  <div class="col-12 mb-4">
+    <div class="card">
+      <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0">Discarded Figures ({{ discarded_figures.count }})</h5>
+      </div>
+      <div class="card-body">
+        <div class="row row-cols-1 row-cols-sm-3 row-cols-md-4 g-3">
+          {% for figure in discarded_figures %}
+          <div class="col figure-card" data-id="{{ figure.id }}">
+            <div class="card h-100">
+              <img
+                src="{{ figure.image_file.url }}"
+                class="card-img-top figure-img"
+                alt="Discarded figure"
+              />
+              <div class="card-body">
+                <p class="card-text">
+                  <small class="text-muted">
+                    Frame: {{ figure.frame_number }}<br />
+                    Confidence: {{ figure.confidence|floatformat:2 }}
+                  </small>
+                </p>
+                <div class="btn-group w-100" role="group">
+                  <button
+                    class="btn btn-sm btn-outline-success move-btn"
+                    data-category="mitotic"
+                  >
+                    Move to Mitotic
+                  </button>
+                  <button
+                    class="btn btn-sm btn-outline-warning move-btn"
+                    data-category="non_mitotic"
+                  >
+                    Move to Review
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Modal for loading indicator -->
+<div
+  class="modal fade"
+  id="loadingModal"
+  tabindex="-1"
+  aria-hidden="true"
+  data-bs-backdrop="static"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body text-center p-4">
+        <div class="spinner-border text-primary mb-3" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mb-0" id="loading-message">Processing...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %} {% block extra_js %}
+<script>
+  $(document).ready(function () {
+    // Move figure to another category
+    $(".move-btn, .discard-btn").click(function () {
+      const figureCard = $(this).closest(".figure-card");
+      const figureId = figureCard.data("id");
+      const category = $(this).data("category");
+
+      // Show loading modal
+      $("#loading-message").text("Moving figure...");
+      $("#loadingModal").modal("show");
+
+      $.ajax({
+        url: "{% url 'move_figure' 0 %}".replace("0", figureId),
+        method: "POST",
+        data: {
+          category: category,
+          csrfmiddlewaretoken: "{{ csrf_token }}",
+        },
+        success: function (response) {
+          // Reload page to reflect changes
+          location.reload();
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+          alert("Error moving figure. Please try again.");
+          console.error("AJAX Error:", textStatus, errorThrown);
+          console.log("Full Response:", jqXHR.responseText);
+          $("#loadingModal").modal("hide");
+        },
+      });
+    });
+
+    // Allow clicking on image to expand
+    $(".figure-img").click(function () {
+      const imgSrc = $(this).attr("src");
+      const modal = `
+                <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-body p-0">
+                                <img src="${imgSrc}" class="img-fluid" alt="Full size image">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+      // Remove any existing modal
+      $("#imageModal").remove();
+
+      // Add and show the modal
+      $("body").append(modal);
+      const imageModal = new bootstrap.Modal(
+        document.getElementById("imageModal")
+      );
+      imageModal.show();
+    });
+  });
+</script>
+{% endblock %}
